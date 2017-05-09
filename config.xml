@@ -58,4 +58,8 @@
         <preference name="HideKeyboardFormAccessoryBar" value="true" />
     </platform>
     <engine name="ios" spec="~4.4.0" />
+    <plugin name="cordova-plugin-inappbrowser" spec="~1.7.1" />
+    <plugin name="cordova-plugin-splashscreen" spec="~4.0.3" />
+    <plugin name="de.appplant.cordova.plugin.local-notification" spec="~0.8.4" />
+    <plugin name="cordova-plugin-statusbar" spec="~2.2.3" />
 </widget>
