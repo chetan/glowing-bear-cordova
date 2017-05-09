@@ -1,0 +1,23 @@
+{
+    "name": "com.glowing_bear",
+    "version": "0.6.0",
+    "displayName": "Glowing Bear",
+    "cordova": {
+        "platforms": [
+            "ios"
+        ],
+        "plugins": {
+            "cordova-plugin-inappbrowser": {},
+            "cordova-plugin-splashscreen": {},
+            "cordova-plugin-statusbar": {},
+            "de.appplant.cordova.plugin.local-notification": {}
+        }
+    },
+    "dependencies": {
+        "cordova-ios": "~4.4.0",
+        "cordova-plugin-inappbrowser": "~1.7.1",
+        "cordova-plugin-splashscreen": "~4.0.3",
+        "cordova-plugin-statusbar": "~2.2.3",
+        "de.appplant.cordova.plugin.local-notification": "~0.8.4"
+    }
+}

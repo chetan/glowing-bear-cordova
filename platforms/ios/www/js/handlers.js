@@ -3,7 +3,7 @@
 
 var weechat = angular.module('weechat');
 
-weechat.factory('handlers', ['$rootScope', '$log', 'models', 'plugins', 'notifications', function($rootScope, $log, models, plugins, notifications) {
+weechat.factory('handlers', ['$rootScope', '$log', 'models', 'plugins', 'notifications', 'bufferResume', 'settings', function($rootScope, $log, models, plugins, notifications, bufferResume, settings) {
 
     var handleVersionInfo = function(message) {
         var content = message.objects[0].content;
@@ -140,6 +140,17 @@ weechat.factory('handlers', ['$rootScope', '$log', 'models', 'plugins', 'notific
         var message = new models.BufferLine(line);
         var buffer = models.getBuffer(message.buffer);
         buffer.requestedLines++;
+
+        // apply filtering
+        if (settings.filterMessages) {
+            for (var i = line.tags_array.length - 1; i >= 0; i--) {
+                var t = line.tags_array[i];
+                if (t === "irc_mode" || t === "irc_join" || t === "irc_quit" || t === "irc_nick") {
+                    return; // skip this message
+                }
+            }
+        }
+
         // Only react to line if its displayed
         if (message.displayed) {
             // Check for date change
@@ -188,10 +199,16 @@ weechat.factory('handlers', ['$rootScope', '$log', 'models', 'plugins', 'notific
                 buffer = new models.Buffer(bufferInfos[i]);
                 models.addBuffer(buffer);
                 // Switch to first buffer on startup
-                if (i === 0) {
+                var shouldResume = bufferResume.shouldResume(buffer);
+                if(shouldResume){
                     models.setActiveBuffer(buffer.id);
                 }
             }
+        }
+        // If there was no buffer to autmatically load, go to the first one.
+        if (!bufferResume.wasAbleToResume()) {
+            var first = bufferInfos[0].pointers[0];
+            models.setActiveBuffer(first);
         }
     };
 
@@ -300,13 +317,14 @@ weechat.factory('handlers', ['$rootScope', '$log', 'models', 'plugins', 'notific
             old.server = localvars.server;
             old.serverSortKey = old.plugin + "." + old.server +
                 (old.type === "server" ? "" :  ("." + old.shortName));
+            old.pinned = localvars.pinned === "true";
         }
     };
 
     var handleBufferTypeChanged = function(message) {
         var obj = message.objects[0].content[0];
         var buffer = obj.pointers[0];
-        var old = models.getBuffer(buffer);
+        //var old = models.getBuffer(buffer);
         // 0 = formatted (normal); 1 = free
         buffer.bufferType = obj.type;
     };
@@ -340,23 +358,41 @@ weechat.factory('handlers', ['$rootScope', '$log', 'models', 'plugins', 'notific
      * Handle answers to hotlist request
      */
     var handleHotlistInfo = function(message) {
-        if (message.objects.length === 0) {
-            return;
+        // Hotlist includes only buffers with unread counts so first we
+        // iterate all our buffers and resets the counts.
+        _.each(models.getBuffers(), function(buffer) {
+            buffer.unread = 0;
+            buffer.notification = 0;
+        });
+        if (message.objects.length > 0) {
+            var hotlist = message.objects[0].content;
+            hotlist.forEach(function(l) {
+                var buffer = models.getBuffer(l.buffer);
+                // If buffer is active in gb, but not active in WeeChat the
+                // hotlist in WeeChat will increase but we should ignore that
+                // in gb.
+                if (buffer.active) {
+                    return;
+                }
+                // 1 is message
+                buffer.unread = l.count[1];
+                // 2 is private
+                // Use += so count[2] or count[3] doesn't overwrite each other
+                buffer.notification += l.count[2];
+                // 3 is highlight
+                // Use += so count[2] or count[3] doesn't overwrite each other
+                buffer.notification += l.count[3];
+                /* Since there is unread messages, we can guess
+                * what the last read line is and update it accordingly
+                */
+                var unreadSum = _.reduce(l.count, function(memo, num) { return memo + num; }, 0);
+                buffer.lastSeen = buffer.lines.length - 1 - unreadSum;
+            });
         }
-        var hotlist = message.objects[0].content;
-        hotlist.forEach(function(l) {
-            var buffer = models.getBuffer(l.buffer);
-            // 1 is message
-            buffer.unread += l.count[1];
-            // 2 is private
-            buffer.notification += l.count[2];
-            // 3 is highlight
-            buffer.notification += l.count[3];
-            /* Since there is unread messages, we can guess
-            * what the last read line is and update it accordingly
-            */
-            var unreadSum = _.reduce(l.count, function(memo, num) { return memo + num; }, 0);
-            buffer.lastSeen = buffer.lines.length - 1 - unreadSum;
+        // the unread badges in the bufferlist doesn't update if we don't do this
+        setTimeout(function() {
+            $rootScope.$apply();
+            $rootScope.$emit('notificationChanged');
         });
     };
 

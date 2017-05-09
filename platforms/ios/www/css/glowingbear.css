@@ -89,6 +89,12 @@ input[type=text], input[type=password], #sendMessage {
     margin-bottom: 5px !important;
 }
 
+.btn-complete-nick {
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
 .btn-send-image {
     position: relative;
     overflow: hidden;
@@ -216,7 +222,13 @@ input[type=text], input[type=password], #sendMessage {
   display:block!important;
 }
 
-#sidebar .badge {
+
+#sidebar .buffer .badge {
+   display: none;
+}
+
+#sidebar .buffer.unread .badge, #sidebar .buffer.notification .badge {
+    display: inline-block;
     border-radius: 0;
     margin-right: -10px;
     padding: 4px 7px;
@@ -273,6 +285,7 @@ input[type=text], input[type=password], #sendMessage {
 .nav-pills > li > a {
     border-radius: 0;
     color: #ddd;
+    padding: 5px 10px;
 }
 .nav-pills > li > a:hover, .nav-pills > li > a:hover span {
     color: #222;
@@ -282,6 +295,12 @@ input[type=text], input[type=password], #sendMessage {
     text-decoration: none;
     background-color: #eee;
     color: #222;
+}
+
+.nav-pills > li.highlight > a, .nav-pills > li.highlight > a span {
+    text-decoration: none;
+    color: #fff;
+    background: #428BCA;
 }
 
 .nav-pills > li > a {
@@ -422,14 +441,6 @@ div.colourbox {
     margin-bottom: -2px;
 }
 
-
-table.notimestamp td.time {
-    display: none !important;
-}
-
-table.notimestampseconds td.time span.seconds {
-    display: none !important;
-}
 
 #sidebar .showquickkeys .buffer .buffer-quick-key {
     transition: all ease-in-out 0.5s;

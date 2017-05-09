@@ -14,7 +14,7 @@ weechat.directive('inputBar', function() {
             command: '=command'
         },
 
-        controller: ['$rootScope', '$scope', '$element', '$log', 'connection', 'imgur', 'models', 'IrcUtils', 'settings', function($rootScope,
+        controller: ['$rootScope', '$scope', '$element', '$log', 'connection', 'imgur', 'models', 'IrcUtils', 'settings', 'utils', function($rootScope,
                              $scope,
                              $element, //XXX do we need this? don't seem to be using it
                              $log,
@@ -22,7 +22,11 @@ weechat.directive('inputBar', function() {
                              imgur,
                              models,
                              IrcUtils,
-                             settings) {
+                             settings,
+                             utils) {
+
+            // Expose utils to be able to check if we're on a mobile UI
+            $scope.utils = utils;
 
             // E.g. Turn :smile: into the unicode equivalent
             $scope.inputChanged = function() {
@@ -223,9 +227,12 @@ weechat.directive('inputBar', function() {
                 // Support different browser quirks
                 var code = $event.keyCode ? $event.keyCode : $event.charCode;
 
+                // A KeyboardEvent property representing the physical key that was pressed, ignoring the keyboard layout and ignoring whether any modifier keys were active.
+                // Not supported in Edge or Safari at the time of writing this, but supported in Firefox and Chrome.
+                var key = $event.code;
+
                 // Safari doesn't implement DOM 3 input events yet as of 8.0.6
                 var altg = $event.getModifierState ? $event.getModifierState('AltGraph') : false;
-
                 // Mac OSX behaves differntly for altgr, so we check for that
                 if (altg) {
                     // We don't handle any anything with altgr
@@ -240,7 +247,7 @@ weechat.directive('inputBar', function() {
                 $scope.iterCandidate = null;
 
                 // Left Alt+[0-9] -> jump to buffer
-                if ($event.altKey && !$event.ctrlKey && (code > 47 && code < 58)) {
+                if ($event.altKey && !$event.ctrlKey && (code > 47 && code < 58) && settings.enableQuickKeys) {
                     if (code === 48) {
                         code = 58;
                     }
@@ -311,7 +318,8 @@ weechat.directive('inputBar', function() {
                 }
 
                 // Alt+< -> switch to previous buffer
-                if ($event.altKey && (code === 60 || code === 226)) {
+                // https://w3c.github.io/uievents-code/#code-IntlBackslash
+                if ($event.altKey && (code === 60 || code === 226 || key === "IntlBackslash")) {
                     var previousBuffer = models.getPreviousBuffer();
                     if (previousBuffer) {
                         models.setActiveBuffer(previousBuffer.id);
@@ -351,6 +359,16 @@ weechat.directive('inputBar', function() {
                         document.getElementById('bufferFilter').focus();
                     });
                     return true;
+                }
+
+                // Alt-h -> Toggle all as read
+                if ($event.altKey && !$event.ctrlKey && code === 72) {
+                    var buffers = models.getBuffers();
+                    _.each(buffers, function(buffer) {
+                        buffer.unread = 0;
+                        buffer.notification = 0;
+                    });
+                    connection.sendHotlistClearAll();
                 }
 
                 var caretPos;
@@ -449,7 +467,7 @@ weechat.directive('inputBar', function() {
                     // Ctrl-w
                     } else if (code == 87) {
                         var trimmedValue = $scope.command.slice(0, caretPos);
-                        var lastSpace = trimmedValue.lastIndexOf(' ') + 1;
+                        var lastSpace = trimmedValue.replace(/\s+$/, '').lastIndexOf(' ') + 1;
                         $scope.command = $scope.command.slice(0, lastSpace) + $scope.command.slice(caretPos, $scope.command.length);
                         setTimeout(function() {
                             inputNode.setSelectionRange(lastSpace, lastSpace);
@@ -462,7 +480,7 @@ weechat.directive('inputBar', function() {
                 }
 
                 // Alt key down -> display quick key legend
-                if ($event.type === "keydown" && code === 18 && !$event.ctrlKey && !$event.shiftKey) {
+                if ($event.type === "keydown" && code === 18 && !$event.ctrlKey && !$event.shiftKey && settings.enableQuickKeys) {
                     $rootScope.showQuickKeys = true;
                 }
             };
@@ -482,6 +500,17 @@ weechat.directive('inputBar', function() {
                     }, 1000);
                     return true;
                 }
+            };
+
+            $scope.handleCompleteNickButton = function($event) {
+                $event.preventDefault();
+                $scope.completeNick();
+
+                setTimeout(function() {
+                    $scope.getInputNode().focus();
+                }, 0);
+
+                return true;
             };
         }]
     };

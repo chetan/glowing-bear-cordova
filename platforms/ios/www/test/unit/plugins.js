@@ -29,12 +29,16 @@ describe('filter', function() {
             $provide.value('version', 'TEST_VER');
         }));
 
-        it('should recognize spotify tracks', inject(function(plugins) {
+        it('should recognize spotify links', inject(function(plugins) {
             expectTheseMessagesToContain([
                 'spotify:track:6JEK0CvvjDjjMUBFoXShNZ',
-                'https://open.spotify.com/track/6JEK0CvvjDjjMUBFoXShNZ'
+                'spotify:user:lorenzhs:playlist:18aXdzQ4Ar1p019OSICtu4',
+                'spotify:artist:0L5fC7Ogm2YwgqVCRcF1bT',
+                'https://open.spotify.com/track/6JEK0CvvjDjjMUBFoXShNZ',
+                'https://open.spotify.com/user/lorenzhs/playlist/18aXdzQ4Ar1p019OSICtu4',
+                'https://open.spotify.com/artist/0L5fC7Ogm2YwgqVCRcF1bT'
             ],
-            'Spotify track',
+            'Spotify music',
             plugins);
         }));
 
@@ -130,7 +134,6 @@ describe('filter', function() {
             plugins);
         }));
 
-/*
         it('should recognize gists', inject(function(plugins) {
             expectTheseMessagesToContain([
                 'https://gist.github.com/lorenzhs/e8c1a7d56fa170320eb8',
@@ -139,7 +142,15 @@ describe('filter', function() {
             'Gist',
             plugins);
         }));
-*/
+
+        it('should recognize pastebins', inject(function(plugins) {
+            expectTheseMessagesToContain([
+                'http://pastebin.com/Wn3TetSE',
+            ],
+            'Pastebin',
+            plugins);
+        }));
+
         it('should recognize giphy gifs', inject(function(plugins) {
             expectTheseMessagesToContain([
                 'https://giphy.com/gifs/eyes-shocked-bird-feqkVgjJpYtjy/',
@@ -148,7 +159,7 @@ describe('filter', function() {
             'Giphy',
             plugins);
         }));
-/*
+
         it('should recognize tweets', inject(function(plugins) {
             expectTheseMessagesToContain([
                 'https://twitter.com/DFB_Team_EN/statuses/488436782959448065',
@@ -156,7 +167,6 @@ describe('filter', function() {
             'Tweet',
             plugins);
         }));
-*/
 
         it('should recognize vines', inject(function(plugins) {
             expectTheseMessagesToContain([
